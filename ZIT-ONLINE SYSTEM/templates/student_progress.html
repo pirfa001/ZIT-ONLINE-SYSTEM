@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Progress - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-6">Course Progress</h1>
+
+    {# If detailed module progress provided by backend, show list; otherwise show summary bar #}
+    {% if progress is defined and progress %}
+    <div class="space-y-6">
+        {% for module in progress %}
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-gray-800">{{ module.module_title }}</h3>
+                <div class="flex items-center">
+                    {% if module.completed %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Completed
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        In Progress
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if module.grade is not none %}
+            <div class="mt-4">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">Grade:</span>
+                    <span class="font-medium {% if module.grade >= 70 %}text-blue-600{% else %}text-red-600{% endif %}">
+                        {{ "%.1f"|format(module.grade) }}%
+                    </span>
+                </div>
+                {% if module.feedback %}
+                <div class="mt-2 text-sm">
+                    <span class="text-gray-600">Feedback:</span>
+                    <p class="mt-1 text-gray-800">{{ module.feedback }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if module.completed_at %}
+            <div class="mt-2 text-sm text-gray-500">
+                Completed on: {{ module.completed_at.strftime('%B %d, %Y') }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="mb-4">
+        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+            <div class="h-4 bg-blue-600" style="width: {{ (progress_percent or 0) }}%;"></div>
+        </div>
+        <div class="text-right text-sm text-gray-700 mt-2">{{ (progress_percent or 0) }}% complete ({{ completed_modules or 0 }} / {{ total_modules or 0 }} modules)</div>
+    </div>
+    <div class="mt-6">
+        <a href="{{ url_for('student_dashboard') }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Back to Dashboard</a>
+        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-block px-4 py-2 ml-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Open Course</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

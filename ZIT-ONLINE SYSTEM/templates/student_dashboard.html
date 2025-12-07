@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-6">
+
+  <!-- Sidebar -->
+  <aside class="w-full md:w-1/4 bg-gradient-to-b from-blue-800 to-blue-900 text-white rounded-xl shadow-lg p-6">
+    <div class="flex flex-col items-center mb-6">
+      <img src="https://ui-avatars.com/api/?name={{ current_user.full_name }}&background=1E40AF&color=fff&size=120"
+           alt="Profile Picture"
+           class="w-24 h-24 rounded-full shadow-md mb-4">
+      <h2 class="text-xl font-bold">{{ current_user.full_name }}</h2>
+      <p class="text-blue-200 text-sm">{{ current_user.email }}</p>
+    </div>
+
+    <nav class="space-y-3">
+      <a href="{{ url_for('dashboard') }}"
+         class="block px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-600 transition">
+         <i class="fas fa-home mr-2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('courses') }}"
+         class="block px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+         <i class="fas fa-book mr-2"></i> Browse Courses
+      </a>
+      <a href="{{ url_for('logout') }}"
+         class="block px-4 py-2 rounded-lg hover:bg-red-600 transition">
+         <i class="fas fa-sign-out-alt mr-2"></i> Logout
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Dashboard Content -->
+  <section class="flex-1 bg-white p-8 rounded-xl shadow-lg">
+  <h1 class="text-3xl font-extrabold text-blue-900 mb-4">Welcome back, {{ current_user.full_name }} 👋</h1>
+    <p class="text-gray-600 mb-6">Here’s a snapshot of your learning progress and recent activity.</p>
+
+    <!-- Enrolled Courses -->
+    <div class="mb-10">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Courses</h2>
+      {% if enrolled_courses %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for course in enrolled_courses %}
+        <div class="p-6 border rounded-xl shadow hover:shadow-lg transition-transform transform hover:-translate-y-1 bg-gradient-to-br from-blue-50 to-white">
+          <h3 class="text-lg font-semibold text-blue-800 mb-2">{{ course.title }}</h3>
+          <p class="text-gray-600 mb-4 line-clamp-2">{{ course.description }}</p>
+          <div class="w-full bg-gray-200 rounded-full h-3 mb-3">
+            <div class="bg-blue-600 h-3 rounded-full" style="width: {{ course.progress }}%;"></div>
+          </div>
+          <p class="text-sm text-gray-500 mb-4">Progress: {{ course.progress }}%</p>
+          <a href="{{ url_for('course_detail', course_id=course.id) }}"
+             class="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition w-full inline-block text-center">
+            Continue Course
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <p class="text-gray-600 italic text-center">You haven’t enrolled in any courses yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Announcements -->
+    <div class="mb-10">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Recent Announcements</h2>
+      {% if announcements %}
+        <div class="space-y-4">
+          {% for announcement in announcements %}
+          <div class="p-4 border rounded-lg bg-yellow-50 border-yellow-200 hover:bg-yellow-100 transition">
+            <p class="text-gray-700 text-sm mt-1">{{ announcement.message }}</p>
+            <p class="text-xs text-gray-500 mt-2">Posted on {{ announcement.created_at.strftime('%b %d, %Y') }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-gray-600 italic text-center">No announcements yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="{{ url_for('courses') }}"
+         class="p-6 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg transition text-center">
+         <i class="fas fa-plus-circle text-2xl mb-2"></i>
+         <p class="font-semibold">Enroll in a New Course</p>
+      </a>
+      <a href="#" class="p-6 bg-green-600 text-white rounded-xl hover:bg-green-700 shadow-lg transition text-center">
+         <i class="fas fa-chart-line text-2xl mb-2"></i>
+         <p class="font-semibold">View Performance</p>
+      </a>
+      <a href="#" class="p-6 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 shadow-lg transition text-center">
+         <i class="fas fa-certificate text-2xl mb-2"></i>
+         <p class="font-semibold">Certificates</p>
+      </a>
+    </div>
+  </section>
+</div>
+
+<!-- Font Awesome -->
+<script src="https://kit.fontawesome.com/a2e0f1f0f0.js" crossorigin="anonymous"></script>
+{% endblock %}

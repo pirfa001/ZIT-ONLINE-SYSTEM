@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login | ZIT Learn Online</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 font-sans">
+
+  <div class="bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md transition-transform transform hover:-translate-y-1 duration-500">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Administrator Login</h1>
+      <p class="text-gray-600">Sign in with your admin account to manage the site</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin_login') }}" class="space-y-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div>
+        <label for="email" class="block text-gray-700 font-medium mb-2">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="admin@zit.edu"
+               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition">
+      </div>
+
+      <div>
+        <label for="password" class="block text-gray-700 font-medium mb-2">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••"
+               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition">
+      </div>
+
+      <button type="submit"
+              class="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition-all duration-300 shadow-lg">
+        Sign in as Admin
+      </button>
+    </form>
+
+    <p class="text-center text-gray-600 mt-6">
+      Return to the <a href="{{ url_for('login') }}" class="text-blue-700 font-semibold hover:underline">regular login</a> page.
+    </p>
+  </div>
+
+</body>
+</html>

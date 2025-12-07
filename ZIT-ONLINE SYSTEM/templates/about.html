@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}About Us - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-20 flex flex-col items-center justify-center text-center">
+  <div class="max-w-5xl px-6">
+    <h1 class="text-5xl font-extrabold text-blue-700 mb-4 animate-fade-in">
+      About <span class="text-indigo-600">ZIT Learn Online</span>
+    </h1>
+    <p class="text-lg text-gray-700 mb-6 leading-relaxed animate-slide-up">
+      <strong>Zibeh Institute of Technology</strong> is redefining how education is delivered —
+      fusing innovation with accessibility to empower every learner.  
+      Through our online learning system, we extend knowledge beyond classrooms,  
+      shaping future-ready minds for the digital age.
+    </p>
+    <a href="{{ url_for('index') }}"
+      class="inline-block bg-blue-600 text-white px-8 py-3 rounded-full text-lg font-semibold 
+             hover:bg-blue-700 hover:scale-105 transition-all duration-300 shadow-lg">
+      ← Back to Home
+    </a>
+  </div>
+</section>
+
+<!-- Mission, Vision & Values -->
+<section class="py-20 bg-white">
+  <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-10 text-center">
+    <div class="p-8 bg-blue-50 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+      <h3 class="text-2xl font-bold text-blue-700 mb-3">🎯 Our Mission</h3>
+      <p class="text-gray-600 leading-relaxed">
+        To make high-quality digital education accessible to everyone, anywhere — 
+        fostering innovation, creativity, and technical excellence.
+      </p>
+    </div>
+
+    <div class="p-8 bg-indigo-50 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+      <h3 class="text-2xl font-bold text-indigo-700 mb-3">🌍 Our Vision</h3>
+      <p class="text-gray-600 leading-relaxed">
+        To become Africa’s most trusted hub for skill-based learning,  
+        where every student can unlock their potential and thrive globally.
+      </p>
+    </div>
+
+    <div class="p-8 bg-blue-50 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+      <h3 class="text-2xl font-bold text-blue-700 mb-3">💡 Core Values</h3>
+      <ul class="text-gray-600 leading-relaxed space-y-2">
+        <li>• Integrity & Inclusivity</li>
+        <li>• Innovation & Excellence</li>
+        <li>• Collaboration & Growth</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Meet the Team Section -->
+<section class="py-20 bg-gradient-to-r from-indigo-50 to-blue-100">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <h2 class="text-4xl font-bold text-blue-700 mb-8">Meet Our Leadership Team</h2>
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-10">
+      <!-- Rabia Abdulsalam - Founder & CEO -->
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300">
+        <img src="{{ url_for('static', filename='images/Rabia Abdulsalam.jpg') }}" alt="Rabia Abdulsalam"
+             class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-md">
+        <h4 class="text-xl font-semibold text-gray-800">Rabia Abdulsalam</h4>
+        <p class="text-blue-600 mb-2 font-bold">Founder & CEO</p>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          Visionary leader driving ZIT Learn Online's mission to revolutionize education across Africa.
+        </p>
+      </div>
+
+      <!-- Prof. Zainab Shuaib Idris - Director of Education -->
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300">
+        <img src="{{ url_for('static', filename='images/Prof.Zainab Shuaib Idris.jpg') }}" alt="Prof. Zainab Shuaib Idris"
+             class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-md">
+        <h4 class="text-xl font-semibold text-gray-800">Prof. Zainab Shuaib Idris</h4>
+        <p class="text-blue-600 mb-2 font-bold">Director of Education</p>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          Ensures academic excellence and shapes the future of digital learning experiences.
+        </p>
+      </div>
+
+      <!-- Arch. Abdulsalam Habib - Co-Founder -->
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300">
+        <img src="{{ url_for('static', filename='images/Arch. Abdulsalam Habib.jpg') }}" alt="Arch. Abdulsalam Habib"
+             class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-md">
+        <h4 class="text-xl font-semibold text-gray-800">Arch. Abdulsalam Habib</h4>
+        <p class="text-blue-600 mb-2 font-bold">Co-Founder</p>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          Architect of innovation, building the technical foundation for ZIT Learn Online's growth.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action -->
+<section class="bg-blue-700 py-16 text-center text-white">
+  <h2 class="text-4xl font-bold mb-4">Join the Future of Learning</h2>
+  <p class="max-w-2xl mx-auto mb-8 text-lg text-blue-100">
+    Start your learning journey today with ZIT Learn Online — 
+    where technology meets education, and potential becomes progress.
+  </p>
+  <a href="{{ url_for('index') }}"
+     class="bg-white text-blue-700 font-semibold px-8 py-3 rounded-full hover:bg-blue-50 transition-all duration-300">
+     Get Started →
+  </a>
+</section>
+
+<!-- Simple Fade Animations -->
+<style>
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in { animation: fadeIn 1s ease-in-out; }
+  .animate-slide-up { animation: fadeIn 1.3s ease-in-out; }
+</style>
+{% endblock %}

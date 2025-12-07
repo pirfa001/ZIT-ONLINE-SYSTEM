@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Courses - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<section class="bg-gradient-to-r from-blue-700 to-blue-500 text-white py-16 text-center rounded-lg">
+  <div class="container mx-auto">
+    <h1 class="text-4xl font-extrabold">Explore Our Courses</h1>
+    <p class="mt-4 text-lg opacity-90">Learn from industry experts at ZIT and gain hands-on skills that matter.</p>
+  </div>
+</section>
+
+<section class="container mx-auto py-10">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-semibold">Available Courses</h2>
+    <div class="flex items-center space-x-3">
+      <select id="categoryFilter" class="border border-gray-300 rounded-lg px-3 py-2">
+        <option value="all">All Categories</option>
+        <option value="tech">Tech</option>
+        <option value="design">Design</option>
+        <option value="business">Business</option>
+        <option value="data">Data Science</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="Search courses..." class="border border-gray-300 rounded-lg px-3 py-2" />
+    </div>
+  </div>
+
+  <div id="courseGrid" class="grid md:grid-cols-3 gap-6">
+    {% if courses %}
+      {% for course in courses %}
+      <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition">
+        <div class="h-48 bg-gray-200 overflow-hidden">
+          <img src="{{ course.image or url_for('static', filename='images/course-placeholder.jpg') }}" alt="{{ course.title }}" class="w-full h-full object-cover"/>
+        </div>
+        <div class="p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800">{{ course.title }}</h3>
+          <p class="text-sm text-yellow-600 font-semibold mb-2">{% if (course.price or 0) == 0 %}Free{% else %}NGN {{ ('%.2f' % course.price) }}{% endif %}</p>
+          <p class="text-gray-600 mb-4 line-clamp-3">{{ course.description or 'No description available.' }}</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{{ course.category or 'tech' }}</span>
+            <div class="space-x-3">
+              <a href="{{ url_for('course_detail', course_id=course.id) }}" class="text-blue-700 hover:underline font-medium">View Details</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="col-span-3 text-center text-gray-500">No courses available yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+// Small client-side filtering to keep UX snappy (works with server-rendered cards)
+const categoryFilter = document.getElementById('categoryFilter');
+const searchInput = document.getElementById('searchInput');
+
+function filterCourses() {
+  const filter = categoryFilter.value.toLowerCase();
+  const search = searchInput.value.toLowerCase();
+  const cards = document.querySelectorAll('#courseGrid > div');
+  cards.forEach(card => {
+    const title = card.querySelector('h3').innerText.toLowerCase();
+    const category = card.querySelector('span') ? card.querySelector('span').innerText.toLowerCase() : '';
+    const matches = (filter === 'all' || category.includes(filter)) && title.includes(search);
+    card.style.display = matches ? '' : 'none';
+  });
+}
+
+categoryFilter.addEventListener('change', filterCourses);
+searchInput.addEventListener('input', filterCourses);
+</script>
+
+{% endblock %}

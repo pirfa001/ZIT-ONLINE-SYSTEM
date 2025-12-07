@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ video.title or video.original_filename }} - Video{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+  <h2 class="text-2xl font-bold mb-4">{{ video.title or video.original_filename }}</h2>
+  <p class="text-sm text-gray-600 mb-4">Uploaded: {{ video.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+
+  <div class="mb-4">
+    <video id="player" controls width="100%">
+      <source src="{{ url_for('stream_video', video_id=video.id) }}" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+  <a href="{{ url_for('course_detail', course_id=video.course_id) }}" class="text-blue-600">Back to course</a>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz Results - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white p-6 rounded shadow">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-2xl font-bold">Results — {{ quiz.title }}</h2>
+    <div class="text-sm text-gray-600">Questions: {{ total_q }}</div>
+  </div>
+  <div class="mb-4 flex items-center justify-end space-x-3">
+    <a href="{{ url_for('export_quiz_csv', quiz_id=quiz.id) }}" class="bg-gray-100 text-gray-800 px-3 py-2 rounded hover:bg-gray-200">Export CSV</a>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6 mb-6">
+    <div class="p-4 bg-gray-50 rounded">
+      <div class="text-sm text-gray-600">Average Score</div>
+      <div class="text-2xl font-bold">{{ average_score }}%</div>
+    </div>
+    <div class="p-4 bg-gray-50 rounded md:col-span-2">
+      <div class="text-sm text-gray-600">Top Performers</div>
+      <div class="mt-2 space-y-2">
+        {% for t in leaderboard %}
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">{{ t.student.full_name }}</div>
+              <div class="text-xs text-gray-500">{{ t.student.email }}</div>
+            </div>
+            <div class="text-lg font-bold">{{ t.percent }}%</div>
+          </div>
+        {% else %}
+          <div class="text-gray-600">No attempts yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if results %}
+  <table class="w-full text-left text-sm border-collapse">
+    <thead>
+      <tr class="text-gray-700">
+        <th class="p-2">Student</th>
+        <th class="p-2">Answered</th>
+        <th class="p-2">Correct</th>
+        <th class="p-2">Score</th>
+        <th class="p-2">Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="border-t">
+        <td class="p-2">{{ r.student.full_name }}<div class="text-xs text-gray-500">{{ r.student.email }}</div></td>
+        <td class="p-2">{{ r.answers }}</td>
+        <td class="p-2">{{ r.correct }}</td>
+        <td class="p-2">{{ r.percent }}%</td>
+        <td class="p-2">
+          <details>
+            <summary class="text-sm text-blue-600 hover:underline">View per-question answers</summary>
+            <div class="mt-2 space-y-2">
+              {% for q in questions %}
+                {% set a = r.per_question.get(q.id) %}
+                <div class="p-2 border rounded">
+                  <div class="font-medium">Q{{ loop.index }}: {{ q.text }}</div>
+                  <div class="mt-1">
+                    {% if a and a.choice_text %}
+                      {% if a.correct %}
+                        <div class="text-green-700 font-semibold">Answer: {{ a.choice_text }} (Correct)</div>
+                      {% else %}
+                        <div class="text-red-700 font-semibold">Answer: {{ a.choice_text }} (Incorrect)</div>
+                        {% if a.correct_choice_text %}
+                          <div class="text-sm text-green-700 mt-1">Correct answer: {{ a.correct_choice_text }}</div>
+                        {% endif %}
+                      {% endif %}
+                    {% elif a and a.choice_id %}
+                      <div class="text-sm">Answer: Choice #{{ a.choice_id }}</div>
+                    {% else %}
+                      <div class="text-sm text-gray-500">No answer</div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="text-gray-600">No student attempts yet for this quiz.</p>
+  {% endif %}
+
+  <div class="mt-4">
+    <a href="{{ url_for('course_detail', course_id=quiz.course_id) }}" class="text-blue-600 hover:underline">Back to Course</a>
+  </div>
+</div>
+
+{% endblock %}

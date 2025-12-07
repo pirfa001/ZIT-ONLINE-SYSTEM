@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen py-8 px-4 md:px-8">
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto mb-8">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Welcome, {{ current_user.full_name }}!</h1>
+        <p class="text-gray-600 mt-2">Manage your courses and engage with students</p>
+      </div>
+      <a href="{{ url_for('create_course') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Course
+      </a>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- KPI Cards -->
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Total Courses</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">{{ courses|length }}</p>
+        </div>
+        <div class="bg-blue-100 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Total Students</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">{{ total_students }}</p>
+        </div>
+        <div class="bg-green-100 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20a9 9 0 0118 0v2H6v-2z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Recent Activity</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">{{ recent_enrollments }}</p>
+          <p class="text-xs text-gray-500 mt-1">New enrollments</p>
+        </div>
+        <div class="bg-purple-100 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- My Courses -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">My Courses</h2>
+      {% if courses %}
+      <div class="space-y-3">
+        {% for course in courses[:5] %}
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+          <div class="flex-1">
+            <h3 class="font-medium text-gray-900">{{ course.title }}</h3>
+            <p class="text-sm text-gray-500">
+              {% set student_count = course.modules|length %}
+              {{ student_count }} modules
+            </p>
+          </div>
+          <a href="{{ url_for('course_detail', course_id=course.id) }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            View →
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% if courses|length > 5 %}
+      <a href="{{ url_for('instructor_dashboard') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium mt-4 block">
+        View all {{ courses|length }} courses →
+      </a>
+      {% endif %}
+      {% else %}
+      <p class="text-gray-500 text-center py-8">
+        No courses yet. <a href="{{ url_for('create_course') }}" class="text-blue-600 hover:text-blue-700">Create one</a>
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+      <div class="space-y-3">
+        <a href="{{ url_for('create_course') }}" class="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
+          <svg class="w-5 h-5 text-blue-600 group-hover:text-blue-700 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <div>
+            <p class="font-medium text-gray-900">Create Course</p>
+            <p class="text-xs text-gray-500">Start a new learning experience</p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('instructor_dashboard') }}" class="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition group">
+          <svg class="w-5 h-5 text-green-600 group-hover:text-green-700 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <p class="font-medium text-gray-900">View Progress</p>
+            <p class="text-xs text-gray-500">See student engagement</p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('courses') }}" class="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition group">
+          <svg class="w-5 h-5 text-purple-600 group-hover:text-purple-700 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747c5.5 0 10-4.998 10-10.747S17.5 6.253 12 6.253z"></path>
+          </svg>
+          <div>
+            <p class="font-medium text-gray-900">View Catalog</p>
+            <p class="text-xs text-gray-500">Browse all courses</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Student Activity -->
+  {% if courses %}
+  <div class="max-w-7xl mx-auto mt-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Student Engagement</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for course in courses[:2] %}
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <h3 class="font-medium text-gray-900 mb-2">{{ course.title }}</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Enrolled Students:</span>
+              <span class="font-medium text-gray-900">
+                {% set enrollment_count = (course.modules|length) %}
+                {{ enrollment_count }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Modules:</span>
+              <span class="font-medium text-gray-900">{{ course.modules|length }}</span>
+            </div>
+            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="text-blue-600 hover:text-blue-700 text-xs font-medium">
+              Manage course →
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  @media (max-width: 768px) {
+    .max-w-7xl {
+      max-width: 100%;
+    }
+  }
+</style>
+{% endblock %}

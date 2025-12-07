@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-8">
+  <div class="container mx-auto px-6">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-extrabold text-gray-900">Admin Dashboard</h1>
+      <p class="text-gray-600 mt-2">Welcome, {{ current_user.full_name }} — System Overview & Analytics</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+        <div class="text-sm text-gray-600 font-medium">Total Users</div>
+        <div class="text-3xl font-bold text-gray-900 mt-2">{{ total_users }}</div>
+        <div class="text-xs text-gray-500 mt-2">
+          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ total_students }} students</span>
+          <span class="bg-green-100 text-green-800 px-2 py-1 rounded ml-2">{{ total_instructors }} instructors</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+        <div class="text-sm text-gray-600 font-medium">Total Courses</div>
+        <div class="text-3xl font-bold text-gray-900 mt-2">{{ total_courses }}</div>
+        <p class="text-xs text-gray-500 mt-2">Active learning programs</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+        <div class="text-sm text-gray-600 font-medium">Total Enrollments</div>
+        <div class="text-3xl font-bold text-gray-900 mt-2">{{ total_enrollments }}</div>
+        <p class="text-xs text-gray-500 mt-2">Course registrations</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
+        <div class="text-sm text-gray-600 font-medium">Est. Revenue</div>
+        <div class="text-3xl font-bold text-gray-900 mt-2">NGN {{ ('%.2f' % total_revenue) }}</div>
+        <p class="text-xs text-gray-500 mt-2">From paid courses</p>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Enrollment Trend -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Enrollment Trend (Last 7 Days)</h2>
+        <canvas id="enrollmentChart"></canvas>
+      </div>
+
+      <!-- Top Courses -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Top Courses by Enrollment</h2>
+        <canvas id="topCoursesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Role Distribution & Export Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- User Role Distribution -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">User Roles</h2>
+        <canvas id="roleChart"></canvas>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div class="space-y-2">
+          <a href="{{ url_for('admin_users') }}" class="block w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-3 rounded-lg font-medium transition text-center">
+            Manage Users
+          </a>
+          <a href="{{ url_for('admin_moderation') }}" class="block w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-4 py-3 rounded-lg font-medium transition text-center">
+            Course Moderation
+          </a>
+          <a href="{{ url_for('admin_analytics') }}" class="block w-full bg-cyan-50 hover:bg-cyan-100 text-cyan-700 px-4 py-3 rounded-lg font-medium transition text-center">
+            Analytics
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Export -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Export Reports</h2>
+        <p class="text-sm text-gray-600 mb-4">Download system data.</p>
+        <div class="space-y-2">
+          <a href="{{ url_for('admin_export_users') }}" class="block text-blue-700 hover:text-blue-900 text-sm font-medium">→ Users</a>
+          <a href="{{ url_for('admin_export_courses') }}" class="block text-purple-700 hover:text-purple-900 text-sm font-medium">→ Courses</a>
+          <a href="{{ url_for('admin_export_enrollments') }}" class="block text-green-700 hover:text-green-900 text-sm font-medium">→ Enrollments</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabbed Data Section -->
+    <div class="bg-white rounded-lg shadow-sm">
+      <!-- Tabs -->
+      <div class="border-b border-gray-200 flex" role="tablist">
+        <button class="tab-btn px-6 py-4 font-medium text-gray-700 border-b-2 border-blue-500 text-blue-600" data-tab="recent-users" role="tab" aria-selected="true">
+          Recent Users
+        </button>
+        <button class="tab-btn px-6 py-4 font-medium text-gray-700 border-b-2 border-transparent hover:text-gray-900" data-tab="recent-courses" role="tab">
+          Recent Courses
+        </button>
+        <button class="tab-btn px-6 py-4 font-medium text-gray-700 border-b-2 border-transparent hover:text-gray-900" data-tab="recent-enrollments" role="tab">
+          Recent Enrollments
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="p-6">
+        <!-- Recent Users -->
+        <div id="recent-users" class="tab-content">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-gray-700 font-semibold">
+                <th class="text-left py-3 px-4">Name</th>
+                <th class="text-left py-3 px-4">Email</th>
+                <th class="text-left py-3 px-4">Role</th>
+                <th class="text-left py-3 px-4">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in recent_users %}
+              <tr class="border-b hover:bg-gray-50">
+                <td class="py-3 px-4 font-medium">{{ u.full_name }}</td>
+                <td class="py-3 px-4 text-gray-600">{{ u.email }}</td>
+                <td class="py-3 px-4">
+                  <span class="inline-block px-3 py-1 rounded-full text-xs font-medium 
+                    {% if u.role == 'admin' %}bg-red-100 text-red-800
+                    {% elif u.role == 'instructor' %}bg-blue-100 text-blue-800
+                    {% else %}bg-green-100 text-green-800{% endif %}">
+                    {{ u.role }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-gray-600">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="py-4 text-center text-gray-500">No recent users</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Recent Courses -->
+        <div id="recent-courses" class="tab-content hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-gray-700 font-semibold">
+                <th class="text-left py-3 px-4">Course Title</th>
+                <th class="text-left py-3 px-4">Instructor</th>
+                <th class="text-left py-3 px-4">Price</th>
+                <th class="text-left py-3 px-4">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in recent_courses %}
+              <tr class="border-b hover:bg-gray-50">
+                <td class="py-3 px-4 font-medium">{{ c.title }}</td>
+                <td class="py-3 px-4 text-gray-600">{{ c.instructor.full_name if c.instructor else '—' }}</td>
+                <td class="py-3 px-4 font-semibold text-green-700">
+                  {% if (c.price or 0) == 0 %}
+                    Free
+                  {% else %}
+                    NGN {{ ('%.2f' % c.price) }}
+                  {% endif %}
+                </td>
+                <td class="py-3 px-4 text-gray-600">{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="py-4 text-center text-gray-500">No recent courses</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Recent Enrollments -->
+        <div id="recent-enrollments" class="tab-content hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-gray-700 font-semibold">
+                <th class="text-left py-3 px-4">Student</th>
+                <th class="text-left py-3 px-4">Course</th>
+                <th class="text-left py-3 px-4">Status</th>
+                <th class="text-left py-3 px-4">Enrolled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for progress, student, course in recent_enrollments %}
+              <tr class="border-b hover:bg-gray-50">
+                <td class="py-3 px-4 font-medium">{{ student.full_name }}</td>
+                <td class="py-3 px-4 text-gray-600">{{ course.title }}</td>
+                <td class="py-3 px-4">
+                  <span class="inline-block px-3 py-1 rounded-full text-xs font-medium 
+                    {% if progress.completed %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {% if progress.completed %}Completed{% else %}In Progress{% endif %}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-gray-600">{{ progress.created_at.strftime('%Y-%m-%d %H:%M') if progress.created_at else '-' }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="py-4 text-center text-gray-500">No recent enrollments</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const tabName = this.dataset.tab;
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => {
+      el.classList.remove('border-blue-500', 'text-blue-600');
+      el.classList.add('border-transparent');
+    });
+    // Show selected tab
+    document.getElementById(tabName).classList.remove('hidden');
+    this.classList.add('border-blue-500', 'text-blue-600');
+    this.classList.remove('border-transparent');
+  });
+});
+
+// Enrollment Trend Chart
+const enrollmentCtx = document.getElementById('enrollmentChart').getContext('2d');
+new Chart(enrollmentCtx, {
+  type: 'line',
+  data: {
+    labels: {{ enrollment_dates | safe }},
+    datasets: [{
+      label: 'Enrollments',
+      data: {{ enrollment_counts }},
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderWidth: 2,
+      tension: 0.4,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { beginAtZero: true }
+    }
+  }
+});
+
+// Top Courses Chart
+const topCoursesCtx = document.getElementById('topCoursesChart').getContext('2d');
+new Chart(topCoursesCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ top_course_titles | safe }},
+    datasets: [{
+      label: 'Enrollments',
+      data: {{ top_course_enrollments }},
+      backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981']
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: { beginAtZero: true }
+    }
+  }
+});
+
+// Role Distribution Chart
+const roleCtx = document.getElementById('roleChart').getContext('2d');
+new Chart(roleCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ role_dist | map(attribute='name') | list | safe }},
+    datasets: [{
+      data: {{ role_dist | map(attribute='value') | list }},
+      backgroundColor: ['#10b981', '#3b82f6', '#ef4444']
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom'
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

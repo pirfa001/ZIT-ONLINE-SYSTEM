@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Quiz - ZIT Learn Online{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+  <h2 class="text-2xl font-bold mb-4">Create Quiz for {{ course.title }}</h2>
+
+  <form id="quizForm" method="POST" action="" class="space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Quiz Title</label>
+      <input name="title" required class="mt-1 block w-full px-3 py-2 border rounded" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Questions</label>
+      <div id="questionsContainer" class="space-y-4 mt-2"></div>
+      <div class="mt-3">
+        <button type="button" id="addQuestion" class="bg-green-600 text-white px-3 py-1 rounded">Add Question</button>
+      </div>
+    </div>
+
+    <input type="hidden" name="questions_json" id="questions_json" />
+
+    <div>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Create Quiz</button>
+      <a href="{{ url_for('course_detail', course_id=course.id) }}" class="ml-4 text-blue-600">Cancel</a>
+    </div>
+  </form>
+
+  <template id="questionTpl">
+    <div class="p-4 border rounded question-block">
+      <div class="flex justify-between items-center mb-2">
+        <strong class="question-title">Question</strong>
+        <button type="button" class="remove-question text-red-600">Remove</button>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700">Question Text</label>
+        <textarea class="q-text mt-1 block w-full px-3 py-2 border rounded"></textarea>
+      </div>
+      <div class="mt-3">
+        <label class="block text-sm text-gray-700">Explanation (optional)</label>
+        <textarea class="q-expl mt-1 block w-full px-3 py-2 border rounded"></textarea>
+      </div>
+      <div class="mt-3 choices-section">
+        <label class="block text-sm text-gray-700">Choices</label>
+        <div class="choices mt-2 space-y-2"></div>
+        <div class="mt-2">
+          <button type="button" class="add-choice bg-indigo-600 text-white px-2 py-1 rounded">Add Choice</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="choiceTpl">
+    <div class="flex items-center space-x-2 choice-item">
+      <input type="radio" name="correct" class="choice-correct" />
+      <input type="text" class="choice-text block w-full px-2 py-1 border rounded" placeholder="Choice text" />
+      <button type="button" class="remove-choice text-red-600">x</button>
+    </div>
+  </template>
+
+  <script>
+  (function(){
+    const container = document.getElementById('questionsContainer');
+    const addQ = document.getElementById('addQuestion');
+    const qTpl = document.getElementById('questionTpl');
+    const cTpl = document.getElementById('choiceTpl');
+    const form = document.getElementById('quizForm');
+
+    function addChoice(choicesEl) {
+      const node = cTpl.content.cloneNode(true);
+      const nodeEl = node.firstElementChild;
+      const radio = nodeEl.querySelector('.choice-correct');
+      const remove = nodeEl.querySelector('.remove-choice');
+      remove.addEventListener('click', () => nodeEl.remove());
+      // ensure radio grouping per question by creating unique name
+      const unique = 'c-' + Math.random().toString(36).slice(2,9);
+      radio.name = unique;
+      choicesEl.appendChild(nodeEl);
+    }
+
+    function addQuestion() {
+      const node = qTpl.content.cloneNode(true);
+      const nodeEl = node.querySelector('.question-block');
+      const choicesEl = nodeEl.querySelector('.choices');
+      const addChoiceBtn = nodeEl.querySelector('.add-choice');
+      const removeQ = nodeEl.querySelector('.remove-question');
+
+      addChoiceBtn.addEventListener('click', () => addChoice(choicesEl));
+      removeQ.addEventListener('click', () => nodeEl.remove());
+
+      // add two default choices
+      addChoice(choicesEl);
+      addChoice(choicesEl);
+
+      container.appendChild(nodeEl);
+    }
+
+    addQ.addEventListener('click', addQuestion);
+
+    form.addEventListener('submit', function(e){
+      // serialize questions
+      const qBlocks = container.querySelectorAll('.question-block');
+      const questions = [];
+      for (const qb of qBlocks) {
+        const text = qb.querySelector('.q-text').value.trim();
+        const expl = qb.querySelector('.q-expl').value.trim();
+        const choiceNodes = qb.querySelectorAll('.choice-item');
+        const choices = [];
+        let anyCorrect = false;
+        for (const cn of choiceNodes) {
+          const ctext = cn.querySelector('.choice-text').value.trim();
+          const correct = !!cn.querySelector('.choice-correct').checked;
+          if (correct) anyCorrect = true;
+          if (ctext) choices.push({ text: ctext, is_correct: correct });
+        }
+        if (!text || choices.length < 2 || !anyCorrect) {
+          e.preventDefault();
+          alert('Each question needs text, at least 2 choices, and one correct choice.');
+          return false;
+        }
+        questions.push({ text: text, explanation: expl, choices: choices });
+      }
+
+      document.getElementById('questions_json').value = JSON.stringify(questions);
+      return true;
+    });
+
+    // add an initial question to start
+    addQuestion();
+  })();
+  </script>
+</div>
+{% endblock %}
