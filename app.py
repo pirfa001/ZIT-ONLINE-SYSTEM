@@ -2,15 +2,13 @@ from flask import Flask, render_template, redirect, url_for, request, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
 import io
 import csv
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 
@@ -142,12 +140,12 @@ def translate(text, lang='en'):
 # =====================================================
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zit_online.db'
-app.config['SECRET_KEY'] = 'your-secret-key'
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
-limiter = Limiter(app=app, key_func=get_remote_address)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -178,6 +176,23 @@ def set_default_language():
         session['language'] = lang or 'en'
 
 # =====================================================
+#  REQUEST LOGGING MIDDLEWARE (Debug Mode Only)
+# =====================================================
+@app.before_request
+def log_request_info():
+    """Log request details for debugging."""
+    if app.debug:
+        client_ip = request.remote_addr
+        endpoint = request.endpoint
+        method = request.method
+        user_agent = request.user_agent.string[:50]
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        
+        # Don't log static files
+        if endpoint and not endpoint.startswith('static'):
+            print(f"[{timestamp}] {client_ip:15} - {method:6} {endpoint:30} - {user_agent}")
+
+# =====================================================
 #  MODELS
 # =====================================================
 class User(UserMixin, db.Model):
@@ -187,6 +202,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(50), default='student')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -307,7 +323,11 @@ class Video(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        return User.query.get(int(user_id))
+        user = User.query.get(int(user_id))
+        if user:
+            user.last_activity = datetime.utcnow()
+            db.session.commit()
+        return user
     except Exception:
         return None
 
@@ -403,17 +423,37 @@ def sanitize_input(text, max_length=None):
 
 
 # =====================================================
+#  HEALTH CHECK ENDPOINT
+# =====================================================
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        # Check database connection
+        db.session.execute(text('SELECT 1'))
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'error: {str(e)}'
+    
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': db_status,
+        'version': '1.0.0'
+    }), 200
+
+# =====================================================
 #  ROUTES
 # =====================================================
 @app.route('/')
 def index():
-    courses = Course.query.order_by(Course.created_at.desc()).limit(6).all()
+    courses = Course.query.filter_by(is_approved=True).order_by(Course.created_at.desc()).limit(6).all()
     return render_template('index.html', courses=courses)
 
 
 @app.route('/courses')
 def courses():
-    courses_list = Course.query.order_by(Course.created_at.desc()).all()
+    courses_list = Course.query.filter_by(is_approved=True).order_by(Course.created_at.desc()).all()
     return render_template('courses.html', courses=courses_list)
 
 
@@ -423,7 +463,6 @@ def about():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-@limiter.limit("3 per minute")
 def register():
     if request.method == 'POST':
         full_name = sanitize_input(request.form.get('full_name', ''), max_length=150)
@@ -473,7 +512,6 @@ def register():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -482,6 +520,8 @@ def login():
 
         if user and user.check_password(password):
             login_user(user)
+            user.last_activity = datetime.utcnow()
+            db.session.commit()
             flash(f'Welcome back, {user.full_name}!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -501,14 +541,20 @@ def logout():
 @app.route('/set_language/<lang>')
 def set_language(lang):
     """Set the user's language preference."""
-    if lang in ['en', 'es', 'fr', 'ar', 'yo']:
+    if lang in SUPPORTED_LANGUAGES:
         session['language'] = lang
+    else:
+        session['language'] = 'en'
     return redirect(request.referrer or url_for('index'))
 
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Update user activity
+    current_user.last_activity = datetime.utcnow()
+    db.session.commit()
+    
     if current_user.role == 'admin':
         total_users = User.query.count()
         total_students = User.query.filter_by(role='student').count()
@@ -531,7 +577,6 @@ def dashboard():
         total_revenue = db.session.query(db.func.sum(Course.price)).scalar() or 0.0
         
         # Enrollment trend (last 7 days)
-        from datetime import timedelta
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         enrollments_by_day = db.session.query(
             db.func.date(CourseProgress.created_at).label('date'),
@@ -632,6 +677,10 @@ def teacher_dashboard():
         flash('Only instructors can access the teacher dashboard.', 'error')
         return redirect(url_for('dashboard'))
     
+    # Update activity
+    current_user.last_activity = datetime.utcnow()
+    db.session.commit()
+    
     # Get instructor's courses
     courses = Course.query.filter_by(instructor_id=current_user.id).order_by(Course.created_at.desc()).all()
     
@@ -641,7 +690,6 @@ def teacher_dashboard():
         .filter(Course.instructor_id == current_user.id).scalar() or 0
     
     # Get recent enrollments count (last 7 days)
-    from datetime import timedelta
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     recent_enrollments = db.session.query(db.func.count(CourseProgress.id))\
         .join(Course, CourseProgress.course_id == Course.id)\
@@ -662,6 +710,7 @@ def course_detail(course_id):
     announcements = Announcement.query.filter_by(course_id=course_id).order_by(Announcement.created_at.desc()).all()
     quizzes = Quiz.query.filter_by(course_id=course_id).order_by(Quiz.created_at.desc()).all()
     videos = Video.query.filter_by(course_id=course_id).order_by(Video.created_at.desc()).all()
+    
     # If student, also gather completed module ids for UI
     completed_module_ids = set()
     if current_user.is_authenticated and current_user.role == 'student':
@@ -1082,10 +1131,10 @@ def view_quiz(quiz_id):
 
 
 @app.route('/quiz/<int:quiz_id>/answer/<int:question_id>', methods=['POST'])
-@login_required  # ADD THIS DECORATOR
+@login_required
 def submit_answer(quiz_id, question_id):
     if current_user.role != 'student':
-        return jsonify({'error': 'Only students can answer quizzes.'}), 403  # FIXED: Added back the role check
+        return jsonify({'error': 'Only students can answer quizzes.'}), 403
 
     data = request.get_json() or {}
     choice_id = data.get('choice_id')
@@ -1289,9 +1338,10 @@ def admin_export_users():
     users = User.query.all()
     si = io.StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Full Name', 'Email', 'Role', 'Created At'])
+    writer.writerow(['ID', 'Full Name', 'Email', 'Role', 'Created At', 'Last Activity'])
     for u in users:
-        writer.writerow([u.id, u.full_name, u.email, u.role, u.created_at.strftime('%Y-%m-%d %H:%M:%S')])
+        last_activity = u.last_activity.strftime('%Y-%m-%d %H:%M:%S') if u.last_activity else ''
+        writer.writerow([u.id, u.full_name, u.email, u.role, u.created_at.strftime('%Y-%m-%d %H:%M:%S'), last_activity])
     
     output = si.getvalue()
     response = make_response(output)
@@ -1310,11 +1360,13 @@ def admin_export_courses():
     courses = Course.query.all()
     si = io.StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Title', 'Instructor', 'Price', 'Created At', 'Module Count', 'Enrollment Count'])
+    writer.writerow(['ID', 'Title', 'Instructor', 'Price', 'Created At', 'Module Count', 'Enrollment Count', 'Approved', 'Rejected'])
     for c in courses:
         module_count = Module.query.filter_by(course_id=c.id).count()
         enrollment_count = CourseProgress.query.filter_by(course_id=c.id).count()
-        writer.writerow([c.id, c.title, c.instructor.full_name if c.instructor else 'N/A', f'{c.price or 0:.2f}', c.created_at.strftime('%Y-%m-%d %H:%M:%S'), module_count, enrollment_count])
+        writer.writerow([c.id, c.title, c.instructor.full_name if c.instructor else 'N/A', f'{c.price or 0:.2f}', 
+                        c.created_at.strftime('%Y-%m-%d %H:%M:%S'), module_count, enrollment_count, 
+                        'Yes' if c.is_approved else 'No', 'Yes' if c.is_rejected else 'No'])
     
     output = si.getvalue()
     response = make_response(output)
@@ -1333,10 +1385,11 @@ def admin_export_enrollments():
     enrollments = db.session.query(CourseProgress, User, Course).join(User, CourseProgress.student_id == User.id).join(Course, CourseProgress.course_id == Course.id).all()
     si = io.StringIO()
     writer = csv.writer(si)
-    writer.writerow(['Student', 'Student Email', 'Course', 'Enrolled At', 'Status'])
+    writer.writerow(['Student', 'Student Email', 'Course', 'Enrolled At', 'Status', 'Last Activity'])
     for progress, user, course in enrollments:
         status = 'Completed' if progress.completed else 'In Progress'
-        writer.writerow([user.full_name, user.email, course.title, progress.created_at.strftime('%Y-%m-%d %H:%M:%S'), status])
+        last_activity = user.last_activity.strftime('%Y-%m-%d %H:%M:%S') if user.last_activity else ''
+        writer.writerow([user.full_name, user.email, course.title, progress.created_at.strftime('%Y-%m-%d %H:%M:%S'), status, last_activity])
     
     output = si.getvalue()
     response = make_response(output)
@@ -1561,5 +1614,22 @@ def admin_analytics():
 #  RUN APP
 # =====================================================
 if __name__ == "__main__":
+    # Create upload directories
+    upload_dirs = ['static/uploads/videos', 'static/uploads/images']
+    for dir_path in upload_dirs:
+        os.makedirs(dir_path, exist_ok=True)
+    
+    # Initialize database
+    with app.app_context():
+        db.create_all()
+    
+    # Determine if we should use reloader
+    is_development = os.environ.get('FLASK_ENV') == 'development'
+    
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(
+        host="0.0.0.0", 
+        port=port,
+        debug=is_development,
+        use_reloader=is_development
+    )
